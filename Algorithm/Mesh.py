@@ -73,7 +73,7 @@ def mesh_points_1(point_set, new_x):
     return point_set[point_set != new_x]
 
 
-def get_points_LHS(X, p):
+def get_points_LHS(X, ):
     """
     使用 LHS 生成100个新的n维候选点，均匀覆盖[0,1]^n。
 
@@ -91,7 +91,6 @@ def get_points_LHS(X, p):
 def get_points_Sobol(X,p,m = 7):
     """
     使用 Sobol 生成100个新的n维候选点，均匀覆盖[0,1]^n。
-
     参数:
         X : 当前已采样点，shape = [N, D]，仅用来获取维度信息
     返回:
