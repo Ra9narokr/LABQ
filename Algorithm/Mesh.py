@@ -73,57 +73,31 @@ def mesh_points_1(point_set, new_x):
     return point_set[point_set != new_x]
 
 
-
-
-def get_points_lhs(X, n_points=100, bounds=None):
+def get_points_LHS(X, p):
     """
-    使用 Latin Hypercube 生成一组新点。
+    使用 LHS 生成100个新的n维候选点，均匀覆盖[0,1]^n。
 
     参数:
-        X         : 当前已采样点（shape = [N, D]）
-        n_points  : 生成多少个候选点
-        bounds    : 每一维的取值范围，形如 [[a1, b1], [a2, b2], ..., [aD, bD]]
-                    如果为 None，默认用 [0, 1]^D
+        X : 当前已采样点，shape = [N, D]，仅用来获取维度信息
     返回:
-        points    : shape = [n_points, D] 的 numpy 数组
+        100个新的点，shape = [100, D]
     """
-
-    D = X.shape[1]  # 自动识别维度
-    sampler = qmc.LatinHypercube(d=D)
-    points = sampler.random(n=n_points)
-
-    if bounds is None:
-        return points  # 默认 [0,1]^D
-
-    l_bounds = np.array([b[0] for b in bounds])
-    u_bounds = np.array([b[1] for b in bounds])
-    return qmc.scale(points, l_bounds, u_bounds)
-
-
-def get_points_sobol(X, n_points=128, bounds=None, scramble=False):
-    """
-    使用 Sobol 序列生成一组新点。
-
-    参数:
-        X         : 当前已采样点（shape = [N, D]）
-        n_points  : 生成多少个候选点（必须是 2^m）
-        bounds    : 每一维的取值范围，形如 [[a1, b1], ..., [aD, bD]]
-        scramble  : 是否打乱序列（推荐 True）
-    返回:
-        points    : shape = [n_points, D] 的 numpy 数组
-    """
-
     D = X.shape[1]
-    m = int(np.log2(n_points))
-    if 2 ** m != n_points:
-        raise ValueError("n_points for Sobol must be a power of 2 (e.g., 128, 256, etc.)")
+    sampler = qmc.LatinHypercube(d=D)
+    points = sampler.random(n=100)
+    return points
 
-    sampler = qmc.Sobol(d=D, scramble=scramble)
-    points = sampler.random_base2(m=m)
 
-    if bounds is None:
-        return points
+def get_points_Sobol(X,p,m = 7):
+    """
+    使用 Sobol 生成100个新的n维候选点，均匀覆盖[0,1]^n。
 
-    l_bounds = np.array([b[0] for b in bounds])
-    u_bounds = np.array([b[1] for b in bounds])
-    return qmc.scale(points, l_bounds, u_bounds)
+    参数:
+        X : 当前已采样点，shape = [N, D]，仅用来获取维度信息
+    返回:
+        100个新的点，shape = [100, D]
+    """
+    D = X.shape[1]
+    sampler = qmc.Sobol(d=D, scramble=True)
+    points = sampler.random_base2(m = m)
+    return points
