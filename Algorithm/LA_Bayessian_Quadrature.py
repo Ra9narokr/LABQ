@@ -4,6 +4,7 @@ from .Matrix import block_cholesky, to_SPDM
 import copy
 import numpy as np
 import scipy.linalg as la
+import time
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.stats import norm
@@ -146,13 +147,16 @@ def ABC(func, _GP, get_points, n, lambd=[30, 1], point_mesh=False,
 
 
 # Performs ABC method in higher dimensions with assumed tensor product kernel
-def ABC_D(func, _GP, get_points, n, lambd=[30, 1], point_mesh=False,
+def ABC_D(func, _GP, get_points, n, lambd=[30, 1],
+          point_mesh=False,
+          sobol = 7,
           options={"tol": False, "n_subset": "", "adapt": False}):
     GP_list = []  # List of Gaussian processes used in output (a GP object for each i = 1,...,N)
     int_params = []  # list of posterior integral parameters (mean and variance) for each GP
 
     GP = copy.deepcopy(_GP)  # To ensure immutability of input GP
     D = GP.D
+    print("Dimensions:", D, ", Sobol:", sobol, ", Steps:", n+1)
 
     tol = options.get("tol")
     if tol is None:
@@ -164,16 +168,13 @@ def ABC_D(func, _GP, get_points, n, lambd=[30, 1], point_mesh=False,
     if adapt is None:
         adapt = False
 
-
-    if tol is False:
-        print("No threshold given, optimising beta at each step.")
     optim = True  # only if optim is true and we have a given tolerance we optimise the beta
 
     if point_mesh is not False:
         point_set = point_mesh
-
+    start_time = time.time()
     for i in range(n + 1):  # The main loop
-        print("Step ", i + 1, " of ", n + 1)
+        check_point_start = time.time()
         if optim == True or tol == False:
             if i > 0 and tol != False:
                 print("Optimising beta since new point outside tolerance ")
@@ -186,7 +187,7 @@ def ABC_D(func, _GP, get_points, n, lambd=[30, 1], point_mesh=False,
 
 
         if point_mesh is False:
-            point_set = get_points(GP.X, point_set)
+            point_set = get_points(GP.X, point_set, sobol)
 
         # Calculate all integrals at once:
 
@@ -214,7 +215,10 @@ def ABC_D(func, _GP, get_points, n, lambd=[30, 1], point_mesh=False,
         chol = la.cholesky(to_SPDM(GP.cov_matrix_(GP.X, GP.X, GP.beta)), lower=True)
         int_param = get_int_param(GP, kernD_X_ints[:-1], chol)
         int_params.append(int_param)  # Add integral parameters to int_params
-        print("(mean,var): ", int_param)
+
+        check_point_end = time.time()
+        print(f"Step {i+1} of {n+1}, Time: {check_point_end - check_point_start:.2f}, "
+              f"Result: {int_param}")
 
 
         # if at last step then no need to find new point!
@@ -257,10 +261,14 @@ def ABC_D(func, _GP, get_points, n, lambd=[30, 1], point_mesh=False,
             optim = get_optim(GP, new_x, new_y, chol, GP.cov_matrix_(np.array([new_x]), GP.X, GP.beta).flatten(), tol)
 
         if point_mesh is not False:
-            point_set = get_points(point_set, new_x)
+            point_set = get_points(point_set, new_x, sobol)
 
         # Add new point to Gaussian process:
         GP.X = np.concatenate((GP.X, np.array([new_x])))
         GP.Y = np.concatenate((GP.Y, np.array([new_y])))
-
-    return GP_list, np.array(int_params)
+        end_time = time.time()
+    totaltime = end_time - start_time
+    print(f"{D}Dimensions Total_Time: {totaltime:.2f}")
+    uncertainty = np.sqrt(int_params[-1][1])/(int_params[-1][0])
+    print(f"Uncertainty Rate: {uncertainty*100:.2f}%")
+    return GP_list, np.array(int_params), totaltime, uncertainty

@@ -26,6 +26,7 @@ class OptionPortfolio:
         self.price_min = price_min
         self.price_max = price_max
         self.options = options
+        self.total = sum(abs(opt.multiplier * opt.position) for opt in self.options)
 
     def analytic_portdelta(self, S0_vec):
         total = 0.0
@@ -45,4 +46,4 @@ class OptionPortfolio:
         if np.isscalar(S):
             S = [S]
         S_initial = [self.to_initial(i) for i in S]
-        return self.analytic_portdelta(S_initial)
+        return self.analytic_portdelta(S_initial) / self.total
