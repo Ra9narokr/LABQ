@@ -50,7 +50,7 @@ def get_int_param(GP, mean_ints, chol):
 
 
 # ABC algorithm in 1D
-def ABC(func, _GP, get_points, n, lambd=[30, 1], point_mesh=False,
+def LABQ(func, _GP, get_points, n, lambd=[30, 1], point_mesh=False,
         options={"tol": False, "adapt": False, "info": False}):
     GP_list = []
     GP = copy.deepcopy(_GP)
@@ -154,7 +154,7 @@ def ABC(func, _GP, get_points, n, lambd=[30, 1], point_mesh=False,
 
 
 # Performs ABC method in higher dimensions with assumed tensor product kernel
-def ABC_D(func, _GP, get_points, n, lambd=[30, 1],
+def LABQ_D(func, _GP, get_points, n, lambd=[30, 1],
           point_mesh=False,
           options={"tol": False, "n_subset": "", "adapt": False}):
     GP_list = []  # List of Gaussian processes used in output (a GP object for each i = 1,...,N)
@@ -283,7 +283,7 @@ def ABC_D(func, _GP, get_points, n, lambd=[30, 1],
     return GP_list, np.array(int_params), times_used, uncertainties
 
 
-def ABC_D_Sobol(func, _GP, get_points, rate, min_n, max_n, point_mesh,
+def LABQ_D_Sobol(func, _GP, get_points, rate, min_n, max_n, point_mesh,
                 lambd=[30, 1], sobol = 7):
 
     GP_list = []  # List of Gaussian processes used in output (a GP object for each i = 1,...,N)
@@ -385,7 +385,7 @@ def ABC_D_Sobol(func, _GP, get_points, rate, min_n, max_n, point_mesh,
     return GP_list, np.array(int_params), times_used, uncertainties
 
 
-def ABC_D_alter2(func, _GP, rate, min_n, max_n):
+def LABQ_D_alter2(func, _GP, rate, min_n, max_n):
     lambd = [30, 1]
     GP_list = []  # List of Gaussian processes used in output (a GP object for each i = 1,...,N)
     int_params = []  # list of posterior integral parameters (mean and variance) for each GP
