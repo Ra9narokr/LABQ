@@ -1,17 +1,11 @@
 import numpy as np
 from scipy.stats import qmc
-
-### 1D get points function
+from scipy.spatial import Voronoi
 
 
 def get_points(X):
     X = X.flatten()
     return (np.sort(X)[1:] + np.sort(X)[:-1]) / 2
-
-
-# D>1 get points function - uses Voronoi cells
-from scipy.spatial import Voronoi
-
 
 def get_points_D(X, p):
     verts = Voronoi(X).vertices
@@ -26,16 +20,6 @@ def get_points_D(X, p):
             pointSet.append(i)
     return np.array(pointSet)
 
-
-# initial point sets for recursive points
-points_2D = np.array(
-    [[0, 0.25], [0, 0.5], [0, 0.75], [0.25, 0], [0.25, 0.25], [0.25, 0.5], [0.25, 0.75], [0.25, 1], [0.5, 0],
-     [0.5, 0.25], [0.5, 0.75], [0.5, 1], [0.75, 0], [0.75, 0.25], [0.75, 0.5], [0.75, 0.75], [0.75, 1], [1, 0.25],
-     [1, 0.5], [1, 0.75]])
-mesh_2D = np.array(np.meshgrid(np.arange(0, 1.02, 0.02), np.arange(0, 1.02, 0.02))).reshape(2, -1).T
-
-
-# add "bisected" points
 def new_points_D(point_set, new_x):
     point_set = point_set[np.any(point_set != new_x, axis=1)]
     D = len(new_x)
@@ -74,14 +58,7 @@ def mesh_points_1(point_set, new_x):
 
 
 def get_points_LHS(X, ):
-    """
-    使用 LHS 生成100个新的n维候选点，均匀覆盖[0,1]^n。
 
-    参数:
-        X : 当前已采样点，shape = [N, D]，仅用来获取维度信息
-    返回:
-        100个新的点，shape = [100, D]
-    """
     D = X.shape[1]
     sampler = qmc.LatinHypercube(d=D)
     points = sampler.random(n=100)
@@ -89,14 +66,39 @@ def get_points_LHS(X, ):
 
 
 def get_points_Sobol(X,p,m = 7):
-    """
-    使用 Sobol 生成100个新的n维候选点，均匀覆盖[0,1]^n。
-    参数:
-        X : 当前已采样点，shape = [N, D]，仅用来获取维度信息
-    返回:
-        100个新的点，shape = [100, D]
-    """
+
     D = X.shape[1]
     sampler = qmc.Sobol(d=D, scramble=True)
     points = sampler.random_base2(m = m)
     return points
+
+
+def get_points_Sobol_D_adaptive(sobol_indices, n_points=8, max_segments=10, min_segments=2):
+    """
+
+      Parameters:
+          sobol_indices : ，shape = (D,)
+          n_points      : Total Points
+          max_segments  :
+          min_segments  :
+
+      Return:
+          X_candidates  : shape = (n_points, D)
+      """
+    D = len(sobol_indices)
+    base_segments = int(np.ceil(n_points ** (1/D)))
+    segments_per_dim = np.full(D, base_segments)
+
+    sorted_indices = np.argsort(-sobol_indices)
+    for i in sorted_indices[:D//2]:
+        segments_per_dim[i] = min(max_segments, segments_per_dim[i] + 2)
+
+    grids = [np.linspace(0, 1, num=s, endpoint=False) + 0.5/s for s in segments_per_dim]
+    mesh = np.meshgrid(*grids)
+    X_all = np.vstack([m.ravel() for m in mesh]).T
+
+    np.random.shuffle(X_all)
+    if n_points > len(X_all):
+        raise ValueError(f"Total Points {len(X_all)} is less then{n_points}.")
+
+    return X_all[:n_points]

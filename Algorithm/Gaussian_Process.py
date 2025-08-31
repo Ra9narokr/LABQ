@@ -7,7 +7,6 @@ import scipy.linalg as la
 
 def beta_processing(beta, dimension):
     """
-    当维度 d>1 时，将每个维度的参数矢量拆分成 d 个独立的参数矢量
     For dimension d>1, splits the parameter vector into d individual parameter vectors for each dimension
     """
 
